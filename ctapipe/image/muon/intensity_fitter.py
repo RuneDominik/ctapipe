@@ -31,7 +31,7 @@ CIRCLE_SQUARE_AREA_RATIO = np.pi / 4
 
 
 @vectorize([double(double, double, double)])
-def chord_length(radius, rho, phi, ret_chord):
+def chord_length(radius, rho, phi):
     """
     Function for integrating the length of a chord across a circle
 
@@ -49,8 +49,6 @@ def chord_length(radius, rho, phi, ret_chord):
     ret_chord: ndarray
         chord length
     """
-    phi = np.array(phi, ndmin=1, copy=False)
-
     chord = 1 - (rho ** 2 * np.sin(phi) ** 2)
     valid = chord >= 0
 
@@ -59,10 +57,10 @@ def chord_length(radius, rho, phi, ret_chord):
 
     if rho <= 1.0:
         # muon has hit the mirror
-        chord[valid] = radius * (np.sqrt(chord[valid]) + rho * np.cos(phi[valid]))
+        chord = radius * (np.sqrt(chord) + rho * np.cos(phi))
     else:
         # muon did not hit the mirror
-        chord[valid] = 2 * radius * np.sqrt(chord[valid])
+        chord = 2 * radius * np.sqrt(chord)
 
     return chord
 
