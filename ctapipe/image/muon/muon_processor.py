@@ -27,6 +27,15 @@ from ctapipe.image.muon import (
 )
 
 
+class RingQualityQuery(QualityQuery):
+    """ for configuring image-wise data checks """
+
+    quality_criteria = List(
+        default_value=[("ring_dummy", "lambda im: im.ring.radius > 0 * u.deg")],
+        help=QualityQuery.quality_criteria.help,
+    ).tag(config=True)
+
+
 class MuonProcessor(TelescopeComponent):
     """
     Takes Muon data and cleans and parametrizes the images.
