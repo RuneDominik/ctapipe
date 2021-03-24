@@ -64,7 +64,7 @@ def intensity_ratio_inside_ring(
 
 
 def ring_completeness(
-    pixel_x, pixel_y, weights, radius, center_x, center_y, threshold=30, bins=30,
+    pixel_x, pixel_y, weights, radius, center_x, center_y, threshold=30, bins=30
 ):
     """
     Estimate how complete a ring is.
@@ -148,3 +148,49 @@ def ring_containment(radius, center_x, center_y, camera_radius):
 
     a = (radius ** 2 - camera_radius ** 2 + d ** 2) / (2 * d)
     return np.arccos(a / radius) / np.pi
+
+
+def radial_light_distribution(pixel_x, pixel_y, weights, radius, center_x, center_y):
+    """
+    Calculate moments of the radial light distribution of a
+    candidate muon ring. First order moment is approximately thering radius.
+    The calculated moments follow those implemented in the radial_light_distribution
+    of lstchain.
+
+    Parameters
+    ----------
+    pixel_x: array-like
+        x coordinates of the camera pixels
+    pixel_y: array-like
+        y coordinates of the camera pixels
+    weights: array-like
+        weights for the camera pixels, will usually be the pe charges
+    radius: float
+        radius of the ring
+    center_x: float
+        x coordinate of the ring center
+    center_y: float
+        y coordinate of the ring center
+
+    Returns
+    -------
+    std: float
+        radial light distribution standart deviation, equal to the root mean squared error,
+        squareroot of the variance (2nd order moment)
+    skewness: float
+        radial light distribution skewness (3rd order central moment per std)
+    excess_kurtosis: float:
+        radial light distribution excess kurtosis, defined as kurtosis
+        (4th order central moment per std) minus 3
+    """
+    # Converting pixel position to polar frame
+    pixel_r = np.sqrt((center_x - pixel_x) ** 2 + (center_y - pixel_y) ** 2)
+
+    # Computing moments
+    delta_r = pixel_r - radius
+
+    std = np.sqrt(np.average(delta_r ** 2, weights=weights))
+    skewness = np.average(delta_r ** 3, weights=weights) / (std ** 3)
+    excess_kurtosis = np.average(delta_r ** 4, weights=weights) / (std ** 4) - 3
+
+    return std, skewness, excess_kurtosis

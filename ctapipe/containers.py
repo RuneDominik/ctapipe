@@ -264,6 +264,18 @@ class MuonParametersContainer(Container):
     mean_squared_error = Field(
         nan, "MSE of the deviation of all pixels after cleaning from the ring fit"
     )
+    radial_light_dist_std = Field(
+        nan,
+        "std (sqrt of the 2nd order moment/variance/MSE) of the rings radial light distribution",
+    )
+    radial_light_dist_skewness = Field(
+        nan,
+        "Skewness (3rd order moment per std) of the rings radial light distribution",
+    )
+    radial_light_dist_excess_kurtosis = Field(
+        nan,
+        "Excess kurtosis (4th order moment per std minus 3) of the rings radial light distribution",
+    )
 
 
 class MuonCollectionContainer(Container):

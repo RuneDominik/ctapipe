@@ -24,14 +24,17 @@ from ctapipe.image.muon import (
     ring_completeness,
     intensity_ratio_inside_ring,
     mean_squared_error,
+    radial_light_distribution,
 )
 
 
 class RingQualityQuery(QualityQuery):
-    """ for configuring image-wise data checks """
+    """ Pre-selection of candidate muon-rings prior to the time consuming intensity fit"""
 
     quality_criteria = List(
-        default_value=[("ring_dummy", "lambda im: im.ring.radius > 0 * u.deg")],
+        default_value=[
+            ("ring_dummy", "lambda im: im.muon_parameters.ring.radius > 0 * u.deg")
+        ],
         help=QualityQuery.quality_criteria.help,
     ).tag(config=True)
 
@@ -160,6 +163,21 @@ class MuonProcessor(TelescopeComponent):
 
         parameters = self.calculate_muon_parameters(tel_id, image, mask, ring)
 
+        dl1.muon_parameters = MuonCollectionContainer(ring=ring, parameters=parameters)
+
+        muon_criteria = self.check_ring(dl1)
+        self.log.debug(
+            "selection_criteria: %s",
+            list(zip(self.check_ring.criteria_names[1:], muon_criteria)),
+        )
+
+        # Call the intensity fit only if all criteria pass:
+        if not all(muon_criteria):
+            self.log.debug(
+                f"Skipping event {event_id}-{tel_id}: Ring does not meet selection criteria"
+            )
+            return
+
         result = self.intensity_fitter(
             tel_id,
             ring.center_x,
@@ -221,11 +239,23 @@ class MuonProcessor(TelescopeComponent):
             ring.center_y,
         )
 
+        std, skewness, excess_kurtosis = radial_light_distribution(
+            x[clean_mask],
+            y[clean_mask],
+            image[clean_mask],
+            ring.radius,
+            ring.center_x,
+            ring.center_y,
+        )
+
         return MuonParametersContainer(
             containment=containment,
             completeness=completeness,
             intensity_ratio=intensity_ratio,
             mean_squared_error=mse,
+            radial_light_dist_std=std,
+            radial_light_dist_skewness=skewness,
+            radial_light_dist_excess_kurtosis=excess_kurtosis,
         )
 
     def get_fov(self, tel_id):
