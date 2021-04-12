@@ -261,6 +261,7 @@ class MuonParametersContainer(Container):
         " and counting segments above a threshold",
     )
     intensity_ratio = Field(nan, "Intensity ratio of pixels in the ring to all pixels")
+    num_pixel = Field(nan, "Number of pixel that form the ring")
     mean_squared_error = Field(
         nan, "MSE of the deviation of all pixels after cleaning from the ring fit"
     )

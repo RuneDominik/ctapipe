@@ -256,6 +256,7 @@ class MuonProcessor(TelescopeComponent):
             radial_light_dist_std=std,
             radial_light_dist_skewness=skewness,
             radial_light_dist_excess_kurtosis=excess_kurtosis,
+            num_pixel=np.count_nonzero(clean_mask),
         )
 
     def get_fov(self, tel_id):
