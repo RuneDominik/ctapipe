@@ -6,7 +6,7 @@ from astropy.coordinates import SkyCoord
 from copy import deepcopy
 
 from ctapipe.calib import CameraCalibrator
-from ctapipe.core import TelescopeComponent
+from ctapipe.core import TelescopeComponent, QualityQuery
 from ctapipe.core import traits
 from ctapipe.io import EventSource
 from ctapipe.image.cleaning import TailcutsImageCleaner
@@ -31,7 +31,7 @@ from ctapipe.image.muon import (
 class RingQualityQuery(QualityQuery):
     """ Pre-selection of candidate muon-rings prior to the time consuming intensity fit"""
 
-    quality_criteria = List(
+    quality_criteria = traits.List(
         default_value=[
             ("ring_dummy", "lambda im: im.muon_parameters.ring.radius > 0 * u.deg")
         ],
@@ -93,6 +93,7 @@ class MuonProcessor(TelescopeComponent):
         self.ring_fitter = MuonRingFitter(parent=self)
         self.intensity_fitter = MuonIntensityFitter(subarray=self.subarray, parent=self)
         self.cleaning = TailcutsImageCleaner(parent=self, subarray=self.subarray)
+        self.check_ring = RingQualityQuery(parent=self)
 
         self.pixels_in_tel_frame = {}
         self.field_of_view = {}
