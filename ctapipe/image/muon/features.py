@@ -187,7 +187,7 @@ def radial_light_distribution(pixel_x, pixel_y, weights, radius, center_x, cente
     pixel_r = np.sqrt((center_x - pixel_x) ** 2 + (center_y - pixel_y) ** 2)
 
     # Computing moments
-    delta_r = pixel_r - radius
+    delta_r = pixel_r - np.average(pixel_r, weights=weights)
 
     std = np.sqrt(np.average(delta_r ** 2, weights=weights))
     skewness = np.average(delta_r ** 3, weights=weights) / (std ** 3)

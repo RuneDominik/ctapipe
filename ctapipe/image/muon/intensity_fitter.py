@@ -552,8 +552,13 @@ class MuonIntensityFitter(TelescopeComponent):
         # Get fitted values
         result = minuit.values
 
+        # optics = telescope.optics
+        # mirror_area = optics.mirror_area.to_value(u.m ** 2)
+        # mirror_radius = np.sqrt(mirror_area / np.pi)
+        # print(mirror_radius)
+
         return MuonEfficiencyContainer(
-            impact=result["impact_parameter"] * u.m,
+            impact=result["impact_parameter"],  # /mirror_radius * u.m,
             impact_x=result["impact_parameter"] * np.cos(result["phi"]) * u.m,
             impact_y=result["impact_parameter"] * np.sin(result["phi"]) * u.m,
             width=u.Quantity(np.rad2deg(result["ring_width"]), u.deg),

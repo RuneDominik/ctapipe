@@ -146,14 +146,15 @@ class Stage1Tool(Tool):
         ):
 
             self.log.log(9, "Processessing event_id=%s", event.index.event_id)
-            self.calibrate(event)
-            if self.write_dl1.write_parameters:
-                self.process_images(event)
-            self.write_dl1(event)
 
             if self.write_muons:
                 self.process_muon(event)
                 self.write_dl1.write_muon_events(event)
+
+            self.calibrate(event)
+            if self.write_dl1.write_parameters:
+                self.process_images(event)
+            self.write_dl1(event)
 
     def finish(self):
         self.write_dl1.write_simulation_histograms(self.event_source)

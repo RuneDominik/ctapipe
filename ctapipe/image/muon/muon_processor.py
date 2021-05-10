@@ -61,7 +61,7 @@ class MuonProcessor(TelescopeComponent):
             "Minimum number of pixels after cleaning and ring finding"
             "required to process an event"
         ),
-        default_value=100,
+        default_value=50,
     ).tag(config=True)
 
     pedestal = traits.FloatTelescopeParameter(
@@ -109,6 +109,13 @@ class MuonProcessor(TelescopeComponent):
 
         self.calib(event_copy)
         for tel_id, dl1_camera in event_copy.dl1.tel.items():
+            # redo cleaning to have muon-specific cleaning
+            # TODO: Add option redo_cleaning to use exisiting clean mask
+            dl1_camera.image_mask = self.cleaning(
+                tel_id=tel_id,
+                image=dl1_camera.image,
+                arrival_times=dl1_camera.peak_time,
+            )
             muon_parameters = self.process_telescope_event(
                 event_copy.index, tel_id, dl1_camera
             )
@@ -126,8 +133,8 @@ class MuonProcessor(TelescopeComponent):
 
         self.log.debug(f"Processing event {event_id}, telescope {tel_id}")
         image = dl1.image
-        if dl1.image_mask is None:
-            dl1.image_mask = self.cleaning(tel_id, image)
+        # if dl1.image_mask is None:
+        #     dl1.image_mask = self.cleaning(tel_id, image)
 
         if np.count_nonzero(dl1.image_mask) <= self.min_pixels.tel[tel_id]:
             self.log.debug(
@@ -138,14 +145,22 @@ class MuonProcessor(TelescopeComponent):
 
         x, y = self.get_pixel_coords(tel_id)
 
-        # iterative ring fit.
+        # Iterative ring fit.
         # First use cleaning pixels, then only pixels close to the ring
         # three iterations seems to be enough for most rings
-        mask = dl1.image_mask
-        for i in range(3):
+        # The resulting mask is used to compute features to find suitible
+        # ring candidates
+        clean_mask = dl1.image_mask
+        mask = clean_mask
+        for _ in range(3):
             ring = self.ring_fitter(x, y, image, mask)
             dist = np.sqrt((x - ring.center_x) ** 2 + (y - ring.center_y) ** 2)
-            mask = np.abs(dist - ring.radius) / ring.radius < 0.4
+            mask = clean_mask & (np.abs(dist - ring.radius) / ring.radius < 0.4)
+            # mask *= np.abs(dist - ring.radius) / ring.radius < 0.4
+
+        # Compute mask that is later used for the intensity fit. This mask contains
+        # pixel that would not survive the tailcut cleaning
+        ring_mask = np.abs(dist - ring.radius) / ring.radius < 0.25
 
         if np.count_nonzero(mask) <= self.min_pixels.tel[tel_id]:
             self.log.debug(
@@ -163,6 +178,10 @@ class MuonProcessor(TelescopeComponent):
             return
 
         parameters = self.calculate_muon_parameters(tel_id, image, mask, ring)
+        parameters.num_pixel = np.count_nonzero(ring_mask)
+        parameters.num_pixel_above_tailcut_0 = np.count_nonzero(
+            image[ring_mask] > self.cleaning.picture_threshold_pe[-1][-1]
+        )
 
         dl1.muon_parameters = MuonCollectionContainer(ring=ring, parameters=parameters)
 
@@ -186,7 +205,7 @@ class MuonProcessor(TelescopeComponent):
             ring.radius,
             image,
             pedestal=np.full(len(image), self.pedestal.tel[tel_id]),
-            mask=mask,
+            mask=ring_mask,
         )
 
         muon_parameters = MuonCollectionContainer(
@@ -211,9 +230,9 @@ class MuonProcessor(TelescopeComponent):
         )
 
         completeness = ring_completeness(
-            x,
-            y,
-            image,
+            x[clean_mask],
+            y[clean_mask],
+            image[clean_mask],
             ring.radius,
             ring.center_x,
             ring.center_y,
@@ -257,7 +276,7 @@ class MuonProcessor(TelescopeComponent):
             radial_light_dist_std=std,
             radial_light_dist_skewness=skewness,
             radial_light_dist_excess_kurtosis=excess_kurtosis,
-            num_pixel=np.count_nonzero(clean_mask),
+            # num_pixel=np.count_nonzero(clean_mask),
         )
 
     def get_fov(self, tel_id):
