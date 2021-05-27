@@ -33,6 +33,7 @@ all_nodes = {
     "/dl1/event/subarray/trigger",
     "/dl1/event/telescope/trigger",
     "/dl1/event/telescope/parameters",
+    "/dl1/event/telescope/muon_parameters",
     "/dl1/event/telescope/images",
     "/configuration/simulation/run",
     "/simulation/event/subarray/shower",
@@ -63,6 +64,7 @@ service_nodes = {
 nodes_with_tels = {
     "/dl1/monitoring/telescope/pointing",
     "/dl1/event/telescope/parameters",
+    "/dl1/event/telescope/muon_parameters",
     "/dl1/event/telescope/images",
     "/simulation/event/telescope/parameters",
     "/simulation/event/telescope/images",
@@ -71,6 +73,7 @@ image_nodes = {"/simulation/event/telescope/images", "/dl1/event/telescope/image
 parameter_nodes = {
     "/simulation/event/telescope/parameters",
     "/dl1/event/telescope/parameters",
+    "/dl1/event/telescope/muon_parameters",
 }
 simu_images = {"/simulation/event/telescope/images"}
 
@@ -357,7 +360,9 @@ class MergeTool(Tool):
         ):
 
             if not DL1EventSource.is_compatible(current_file):
-                self.log.critical(f"input file {current_file} is not a supported DL1 file")
+                self.log.critical(
+                    f"input file {current_file} is not a supported DL1 file"
+                )
                 if self.skip_broken_files:
                     continue
                 else:
